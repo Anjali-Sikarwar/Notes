@@ -15,40 +15,42 @@ class NotesDetailViewController : UIViewController {
     @IBOutlet weak var contentTextView: UITextView!
     @IBOutlet weak var richTextFormatingBaseView: UIView!
     
-    var selectedTextRangeBeforeDismiss: NSRange?
-    var showToolbarButton: UIBarButtonItem?
-    
     var managedContext: NSManagedObjectContext!
     
     var richTextViewModel = RichTextFormattingViewModel()
-    var viewModel: NotesViewModel?
+    var viewModel: NotesViewModel!
+    var toolbarViewModel = ToolbarViewModel()
     weak var delegate: NotesViewControllerDelegate?
     
+    var isChecklistModeEnabled = false
 
-    
-//    var richTextFormattingView: RichTextFormattingView?
-    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         titleTextView.delegate = self
         contentTextView.delegate = self
         richTextFormatingBaseView.isHidden = true
-//        setupRichTextFormattingView()
         setupToolbar()
         
         if viewModel == nil {
-            print("⚠️ Warning: viewModel was nil, creating a new instance")
             viewModel = NotesViewModel(context: managedContext)
+        }else {
+            loadNoteData()
         }
-        
-        // Move the view off-screen but DO NOT hide it
-        richTextFormatingBaseView.transform = CGAffineTransform(translationX: 0, y: view.frame.height)
-        richTextFormatingBaseView.isHidden = false
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.cancelsTouchesInView = false // Allows other interactions
         view.addGestureRecognizer(tapGesture)
+        
+        setupTapGestureForChecklist()
+        
+    }
+    
+    private func loadNoteData() {
+        if let note = viewModel.note {
+            titleTextView.text = note.title
+            contentTextView.text = note.content
+        }
     }
     
     func textViewDidChangeSelection(_ textView: UITextView) {
@@ -56,70 +58,28 @@ class NotesDetailViewController : UIViewController {
             textView.resignFirstResponder()
         }
     }
-
     
     private func setupToolbar() {
-        let actions: [Selector] = [
-            #selector(formatButtonClicked),
-            #selector(checklistButtonClicked),
-            #selector(cameraButtonClicked),
-            #selector(penButtonClicked),
-            #selector(tableButtonClicked),
-            #selector(closeToolbar),
-            #selector(showToolbar)
-        ]
-        let toolbar = ToolbarHelper.createToolbar(target: self, actions: actions)
+        let toolbar = toolbarViewModel.createToolbar(target: self)
         contentTextView.inputAccessoryView = toolbar
     }
-    
-//    @objc func closeToolbar() {
-//        if let toolbar = contentTextView.inputAccessoryView as? UIToolbar {
-//            ToolbarHelper.toggleToolbarVisibility(toolbar: toolbar, show: false, target: self, showToolbarAction: #selector(showToolbar))
-//        }
-//    }
-//
-//    @objc func showToolbar() {
-//        if let toolbar = contentTextView.inputAccessoryView as? UIToolbar {
-//            ToolbarHelper.toggleToolbarVisibility(toolbar: toolbar, show: true, target: self, showToolbarAction: #selector(showToolbar))
-//        }
-//    }
 
-    
     @objc func closeToolbar() {
-        if let toolbar = contentTextView.inputAccessoryView as? UIToolbar {
-            ToolbarHelper.toggleToolbarVisibility(toolbar: toolbar, show: false, target: self, showToolbarAction: #selector(showToolbar))
-        }
+        toolbarViewModel.toggleToolbar(toolbar: contentTextView.inputAccessoryView as? UIToolbar, show: false, target: self)
     }
 
     @objc func showToolbar() {
-        if let toolbar = contentTextView.inputAccessoryView as? UIToolbar {
-            ToolbarHelper.toggleToolbarVisibility(toolbar: toolbar, show: true, target: self, showToolbarAction: #selector(showToolbar))
-        }
+        toolbarViewModel.toggleToolbar(toolbar: contentTextView.inputAccessoryView as? UIToolbar, show: true, target: self)
     }
 
-    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        print("NotesDetailViewController viewWillDisappear called")
-
-        guard let viewModel = viewModel else {
-            print("❌ Error: viewModel is nil!")
-            return
-        }
-
-        let title = titleTextView.text ?? ""
-        let content = contentTextView.text ?? ""
-
-        if title.isEmpty && content.isEmpty {
-            return
-        }
-
-        viewModel.saveNote(title: title, content: content)
+        viewModel.saveNote(title: titleTextView.text, content: contentTextView.text)
         delegate?.didSaveNote()
     }
     
     @objc func dismissKeyboard() {
-        view.endEditing(true) // Dismiss keyboard
+        view.endEditing(true)
     }
 
     
@@ -137,12 +97,17 @@ class NotesDetailViewController : UIViewController {
 
     
     @objc func formatButtonClicked() {
+        // Ensure there's a valid text selection
+        guard let selectedRange = contentTextView.selectedTextRange, !selectedRange.isEmpty else {
+            return // Don't show formatting view if no text is selected
+        }
+
         richTextViewModel.selectedTextRange = contentTextView.selectedRange
-        contentTextView.resignFirstResponder() // Hide keyboard
+
+        contentTextView.resignFirstResponder()
 
         let height = richTextFormatingBaseView.frame.height
-        
-        // Make sure it's initially off-screen before animating
+
         richTextFormatingBaseView.transform = CGAffineTransform(translationX: 0, y: height)
         richTextFormatingBaseView.isHidden = false
 
@@ -150,10 +115,77 @@ class NotesDetailViewController : UIViewController {
             self.richTextFormatingBaseView.transform = .identity
         })
     }
-
+    
+    
     @IBAction func addCheckListButtonClicked(_ sender: Any) {
+        isChecklistModeEnabled.toggle() // Toggle checklist mode
+        
+        if isChecklistModeEnabled {
+            insertChecklistItem(in: contentTextView)
+        }
     }
     
+    func insertChecklistItem(in textView: UITextView) {
+        let checklistImage = NSTextAttachment()
+        checklistImage.image = UIImage(systemName: "circle") // SF Symbol for empty checkbox
+        
+        let checklistAttributedString = NSMutableAttributedString(string: "\n") // Ensure new line
+        checklistAttributedString.append(NSAttributedString(attachment: checklistImage)) // Add the image
+        checklistAttributedString.append(NSAttributedString(string: " ")) // Space after the image
+        
+        if let selectedRange = textView.selectedTextRange {
+            textView.textStorage.insert(checklistAttributedString, at: textView.offset(from: textView.beginningOfDocument, to: selectedRange.start))
+        }
+
+        moveCursorToEnd(textView)
+        
+        // Ensure keyboard remains open
+        DispatchQueue.main.async {
+            textView.becomeFirstResponder()
+        }
+    }
+    
+    @objc func handleTapOnTextView(_ gesture: UITapGestureRecognizer) {
+        guard let textView = contentTextView else { return }
+        
+        let location = gesture.location(in: textView)
+        
+        guard let textPosition = textView.closestPosition(to: location),
+              let range = textView.tokenizer.rangeEnclosingPosition(textPosition, with: .character, inDirection: UITextDirection.layout(.left)) else { return }
+        
+        let index = textView.offset(from: textView.beginningOfDocument, to: range.start)
+        
+        let attributes = textView.attributedText.attributes(at: index, effectiveRange: nil)
+        
+        if let attachment = attributes[.attachment] as? NSTextAttachment {
+            if let image = attachment.image {
+                let imageName = image.accessibilityIdentifier ?? "circle" // Default to circle if nil
+                let newImageName = (imageName == "circle") ? "checkmark.circle" : "circle"
+                
+                let newChecklistImage = NSTextAttachment()
+                newChecklistImage.image = UIImage(systemName: newImageName)
+                newChecklistImage.image?.accessibilityIdentifier = newImageName
+                
+                let attributedString = NSAttributedString(attachment: newChecklistImage)
+                
+                let mutableText = NSMutableAttributedString(attributedString: textView.attributedText)
+                mutableText.replaceCharacters(in: NSRange(location: index, length: 1), with: attributedString)
+                
+                textView.attributedText = mutableText
+            }
+        }
+    }
+
+    func setupTapGestureForChecklist() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapOnTextView(_:)))
+        contentTextView.addGestureRecognizer(tapGesture)
+    }
+    
+    func moveCursorToEnd(_ textView: UITextView) {
+        let newPosition = textView.endOfDocument
+        textView.selectedTextRange = textView.textRange(from: newPosition, to: newPosition)
+    }
+
     
     @IBAction func cameraButtonClicked(_ sender: Any) {
     }
@@ -183,43 +215,41 @@ class NotesDetailViewController : UIViewController {
 
     @IBAction func monostyledButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyMonospacedFont(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyMonospacedFont(to: contentTextView, range: selectedRange)
     }
     @IBAction func titleButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyTitleStyle(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyTitleStyle(to: contentTextView, range: selectedRange)
     }
     @IBAction func headingButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyHeadingStyle(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyHeadingStyle(to: contentTextView, range: selectedRange)
     }
     @IBAction func subheadingButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applySubHeadingStyle(to: contentTextView, range: selectedRange)
+        richTextViewModel.applySubHeadingStyle(to: contentTextView, range: selectedRange)
     }
     @IBAction func bodyButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyBodyStyle(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyBodyStyle(to: contentTextView, range: selectedRange)
     }
     @IBAction func boldButtonClicked(_ sender: UIButton) {
-        let selectedRange = contentTextView.selectedRange
-        guard selectedRange.length > 0 else { return }
-        print("selectedRange: ", selectedRange)
-        TextFormattingHelper.applyBold(to: contentTextView, range: selectedRange)
+        guard let selectedRange = richTextViewModel.selectedTextRange else { return }
+        richTextViewModel.applyBold(to: contentTextView, range: selectedRange)
     }
     @IBAction func italicButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyItalic(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyItalic(to: contentTextView, range: selectedRange)
     }
     
     @IBAction func underLinebuttonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyUnderline(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyUnderline(to: contentTextView, range: selectedRange)
     }
     
     @IBAction func strikethroughButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.applyStrikethrough(to: contentTextView, range: selectedRange)
+        richTextViewModel.applyStrikethrough(to: contentTextView, range: selectedRange)
     }
     
     @IBAction func editButtonClicked(_ sender: UIButton) {
@@ -228,23 +258,23 @@ class NotesDetailViewController : UIViewController {
     
     @IBAction func changeTextColorButtonClicked(_ sender: UIButton) {
         guard let selectedRange = richTextViewModel.selectedTextRange else { return }
-        TextFormattingHelper.changeTextColor(to: contentTextView, range: selectedRange, color: .red)
+        richTextViewModel.changeTextColor(to: contentTextView, range: selectedRange, color: .red)
     }
     
     @IBAction func bulletListButtonClicked(_ sender: UIButton) {
-        TextFormattingHelper.applyBulletList(to: contentTextView)
+        richTextViewModel.applyBulletList(to: contentTextView)
     }
     @IBAction func dashListButtonClicked(_ sender: UIButton) {
-        TextFormattingHelper.applyDashList(to: contentTextView)
+        richTextViewModel.applyDashList(to: contentTextView)
     }
     @IBAction func numberListButtonClicked(_ sender: UIButton) {
-        TextFormattingHelper.applyNumberedList(to: contentTextView)
+        richTextViewModel.applyNumberedList(to: contentTextView)
     }
     @IBAction func alignLeft(_ sender: UIButton) {
-        TextFormattingHelper.alignLeft(to: contentTextView)
+        richTextViewModel.alignLeft(to: contentTextView)
     }
     @IBAction func alignRight(_ sender: UIButton) {
-        TextFormattingHelper.alignRight(to: contentTextView)
+        richTextViewModel.alignRight(to: contentTextView)
     }
 }
 
@@ -254,6 +284,21 @@ extension NotesDetailViewController: UITextViewDelegate {
             contentTextView.becomeFirstResponder() // Move focus to contentTextView on Return
             return false // Prevent the newline character from being added to the titleTextView
         }
+        
+        if text == "\n" && isChecklistModeEnabled {
+            insertChecklistItem(in: textView)
+            return false // Prevent default new line behavior
+        }
+        
+        if text.isEmpty, let textRange = Range(range, in: textView.text) {
+            let updatedText = textView.text.replacingCharacters(in: textRange, with: text)
+            
+            if updatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                isChecklistModeEnabled = false
+            }
+        }
+        
         return true
     }
+
 }
