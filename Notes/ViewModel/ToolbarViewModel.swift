@@ -30,7 +30,6 @@ class ToolbarViewModel {
         guard let toolbar = toolbar else { return }
         
         if show {
-//            toolbar.isHidden = false
             let newToolbar = createToolbar(target: target)
             toolbar.items = newToolbar.items
         } else {

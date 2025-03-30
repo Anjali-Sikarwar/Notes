@@ -11,7 +11,6 @@ import UIKit
 class RichTextFormattingViewModel {
     var selectedTextRange: NSRange?
     
-    /// Toggles Bold formatting
     func applyBold(to textView: UITextView, range: NSRange) {
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         
@@ -31,7 +30,6 @@ class RichTextFormattingViewModel {
         textView.selectedRange = range
     }
 
-    /// Toggles Italic formatting
     func applyItalic(to textView: UITextView, range: NSRange) {
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         
@@ -51,7 +49,6 @@ class RichTextFormattingViewModel {
         textView.selectedRange = range
     }
 
-    /// Toggles Underline formatting
     func applyUnderline(to textView: UITextView, range: NSRange) {
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         let isCurrentlyUnderlined = (attributedString.attribute(.underlineStyle, at: range.location, effectiveRange: nil) as? NSNumber)?.intValue == NSUnderlineStyle.single.rawValue
@@ -66,7 +63,6 @@ class RichTextFormattingViewModel {
         textView.selectedRange = range
     }
     
-    /// Toggles Strikethrough formatting
     func applyStrikethrough(to textView: UITextView, range: NSRange) {
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         let isCurrentlyStrikethrough = (attributedString.attribute(.strikethroughStyle, at: range.location, effectiveRange: nil) as? NSNumber)?.intValue == NSUnderlineStyle.single.rawValue
@@ -81,7 +77,6 @@ class RichTextFormattingViewModel {
         textView.selectedRange = range
     }
     
-    /// Changes the text color
     func changeTextColor(to textView: UITextView, range: NSRange, color: UIColor) {
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         attributedString.addAttribute(.foregroundColor, value: color, range: range)
@@ -89,29 +84,25 @@ class RichTextFormattingViewModel {
         textView.attributedText = attributedString
         textView.selectedRange = range
     }
-    
-    /// Applies bullet list
+
     func applyBulletList(to textView: UITextView) {
         let text = textView.text ?? ""
         let newText = text.components(separatedBy: "\n").map { "• " + $0 }.joined(separator: "\n")
         textView.text = newText
     }
-    
-    /// Applies dash list
+
     func applyDashList(to textView: UITextView) {
         let text = textView.text ?? ""
         let newText = text.components(separatedBy: "\n").map { "- " + $0 }.joined(separator: "\n")
         textView.text = newText
     }
     
-    /// Applies numbered list
     func applyNumberedList(to textView: UITextView) {
         let text = textView.text ?? ""
         let newText = text.components(separatedBy: "\n").enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
         textView.text = newText
     }
     
-    /// Aligns text to left
     func alignLeft(to textView: UITextView) {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .left
@@ -120,7 +111,6 @@ class RichTextFormattingViewModel {
         textView.attributedText = attributedString
     }
     
-    /// Aligns text to right
     func alignRight(to textView: UITextView) {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = .right
@@ -129,33 +119,27 @@ class RichTextFormattingViewModel {
         textView.attributedText = attributedString
     }
     
-    /// Applies monospaced font style
     func applyMonospacedFont(to textView: UITextView, range: NSRange) {
-        guard range.length > 0 else { return } // Ensure text is selected
+        guard range.length > 0 else { return }
 
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         
-        // Retrieve existing font attributes to avoid overwriting styles
         let currentFont = attributedString.attribute(.font, at: range.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: 17)
 
-        // Apply monospaced font while keeping other styles (bold, italic, etc.)
         let monoFontDescriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body).withDesign(.monospaced)
         let monoFont = UIFont(descriptor: monoFontDescriptor ?? currentFont.fontDescriptor, size: currentFont.pointSize)
 
         attributedString.addAttribute(.font, value: monoFont, range: range)
         
         textView.attributedText = attributedString
-        textView.selectedRange = range // Preserve selection
+        textView.selectedRange = range
     }
 
-    
-    /// Applies heading style
     func applyHeadingStyle(to textView: UITextView, range: NSRange) {
-        guard range.length > 0 else { return } // Ensure text is selected
+        guard range.length > 0 else { return }
 
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
         
-        // Preserve existing attributes while changing font
         let currentFont = attributedString.attribute(.font, at: range.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: 17)
         
         let headingFont = UIFont(descriptor: currentFont.fontDescriptor.withSize(22).withSymbolicTraits(.traitBold) ?? currentFont.fontDescriptor, size: 22)
@@ -163,18 +147,14 @@ class RichTextFormattingViewModel {
         attributedString.addAttribute(.font, value: headingFont, range: range)
         
         textView.attributedText = attributedString
-        textView.selectedRange = range // Preserve selection
+        textView.selectedRange = range
     }
 
-
-    
-    /// Applies title style
     func applyTitleStyle(to textView: UITextView, range: NSRange) {
-        guard range.length > 0 else { return } // Ensure text is selected
+        guard range.length > 0 else { return }
 
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
 
-        // Preserve existing attributes
         let currentFont = attributedString.attribute(.font, at: range.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: 17)
 
         let titleFontDescriptor = currentFont.fontDescriptor.withSize(28).withSymbolicTraits(.traitBold)
@@ -183,16 +163,14 @@ class RichTextFormattingViewModel {
         attributedString.addAttribute(.font, value: titleFont, range: range)
 
         textView.attributedText = attributedString
-        textView.selectedRange = range // Preserve selection
+        textView.selectedRange = range
     }
 
-    /// Applies subheading style
     func applySubHeadingStyle(to textView: UITextView, range: NSRange) {
-        guard range.length > 0 else { return } // Ensure text is selected
+        guard range.length > 0 else { return }
 
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
 
-        // Preserve existing attributes
         let currentFont = attributedString.attribute(.font, at: range.location, effectiveRange: nil) as? UIFont ?? UIFont.systemFont(ofSize: 17)
 
         let subHeadingFontDescriptor = currentFont.fontDescriptor.withSize(20).withSymbolicTraits(.traitBold)
@@ -201,22 +179,20 @@ class RichTextFormattingViewModel {
         attributedString.addAttribute(.font, value: subHeadingFont, range: range)
 
         textView.attributedText = attributedString
-        textView.selectedRange = range // Preserve selection
+        textView.selectedRange = range
     }
 
-    /// Applies Body style
     func applyBodyStyle(to textView: UITextView, range: NSRange) {
-        guard range.length > 0 else { return } // Ensure text is selected
+        guard range.length > 0 else { return }
 
         let attributedString = NSMutableAttributedString(attributedString: textView.attributedText)
 
-        // Preserve existing attributes while resetting font to default body style
         let bodyFont = UIFont.systemFont(ofSize: 17, weight: .regular)
 
         attributedString.addAttribute(.font, value: bodyFont, range: range)
 
         textView.attributedText = attributedString
-        textView.selectedRange = range // Preserve selection
+        textView.selectedRange = range
     }
 }
 

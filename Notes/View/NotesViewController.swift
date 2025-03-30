@@ -32,7 +32,7 @@ class NotesViewController: UIViewController {
     }
     
     func loadNotes() {
-        let fetchRequest = NSFetchRequest<Note>(entityName: "Note") // Explicitly specify the entity name
+        let fetchRequest = NSFetchRequest<Note>(entityName: "Note")
         do {
             noteList = try managedContext.fetch(fetchRequest)
             notesTableView.reloadData()
@@ -44,8 +44,6 @@ class NotesViewController: UIViewController {
     @IBAction func addNewNote(_ sender: Any) {
         performSegue(withIdentifier: "addNoteSegue", sender: self)
     }
-
-    // MARK: - Navigation
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "addNoteSegue" {
@@ -59,6 +57,6 @@ class NotesViewController: UIViewController {
 
 extension NotesViewController: NotesViewControllerDelegate {
     func didSaveNote() {
-        loadNotes() // Reload data from Core Data
+        loadNotes()
     }
 }

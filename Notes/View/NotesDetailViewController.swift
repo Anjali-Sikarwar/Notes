@@ -23,6 +23,7 @@ class NotesDetailViewController : UIViewController {
     weak var delegate: NotesViewControllerDelegate?
     
     var isChecklistModeEnabled = false
+    var isNewNote = true
 
     
     override func viewDidLoad() {
@@ -30,19 +31,28 @@ class NotesDetailViewController : UIViewController {
         titleTextView.delegate = self
         contentTextView.delegate = self
         richTextFormatingBaseView.isHidden = true
+        contentTextView.isEditable = true
+        titleTextView.isEditable = true
+        contentTextView.isUserInteractionEnabled = true
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+        setupTapGestureForChecklist()
+        
         setupToolbar()
         
         if viewModel == nil {
             viewModel = NotesViewModel(context: managedContext)
         }else {
+            isNewNote = false
             loadNoteData()
         }
         
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        tapGesture.cancelsTouchesInView = false // Allows other interactions
-        view.addGestureRecognizer(tapGesture)
+        if isNewNote {
+            titleTextView.becomeFirstResponder()
+        }
         
-        setupTapGestureForChecklist()
         
     }
     
@@ -50,12 +60,6 @@ class NotesDetailViewController : UIViewController {
         if let note = viewModel.note {
             titleTextView.text = note.title
             contentTextView.text = note.content
-        }
-    }
-    
-    func textViewDidChangeSelection(_ textView: UITextView) {
-        if let selectedTextRange = textView.selectedTextRange, !selectedTextRange.isEmpty {
-            textView.resignFirstResponder()
         }
     }
     
@@ -88,7 +92,7 @@ class NotesDetailViewController : UIViewController {
     }
     
     override var canBecomeFirstResponder: Bool {
-        return false
+        return true
     }
     
     @objc func checklistButtonClicked() {
@@ -97,9 +101,9 @@ class NotesDetailViewController : UIViewController {
 
     
     @objc func formatButtonClicked() {
-        // Ensure there's a valid text selection
+    
         guard let selectedRange = contentTextView.selectedTextRange, !selectedRange.isEmpty else {
-            return // Don't show formatting view if no text is selected
+            return
         }
 
         richTextViewModel.selectedTextRange = contentTextView.selectedRange
@@ -118,7 +122,7 @@ class NotesDetailViewController : UIViewController {
     
     
     @IBAction func addCheckListButtonClicked(_ sender: Any) {
-        isChecklistModeEnabled.toggle() // Toggle checklist mode
+        isChecklistModeEnabled.toggle()
         
         if isChecklistModeEnabled {
             insertChecklistItem(in: contentTextView)
@@ -127,19 +131,16 @@ class NotesDetailViewController : UIViewController {
     
     func insertChecklistItem(in textView: UITextView) {
         let checklistImage = NSTextAttachment()
-        checklistImage.image = UIImage(systemName: "circle") // SF Symbol for empty checkbox
+        checklistImage.image = UIImage(systemName: "circle")
         
-        let checklistAttributedString = NSMutableAttributedString(string: "\n") // Ensure new line
-        checklistAttributedString.append(NSAttributedString(attachment: checklistImage)) // Add the image
-        checklistAttributedString.append(NSAttributedString(string: " ")) // Space after the image
+        let checklistAttributedString = NSMutableAttributedString(string: "\n")
+        checklistAttributedString.append(NSAttributedString(attachment: checklistImage))
+        checklistAttributedString.append(NSAttributedString(string: " "))
         
         if let selectedRange = textView.selectedTextRange {
             textView.textStorage.insert(checklistAttributedString, at: textView.offset(from: textView.beginningOfDocument, to: selectedRange.start))
         }
-
         moveCursorToEnd(textView)
-        
-        // Ensure keyboard remains open
         DispatchQueue.main.async {
             textView.becomeFirstResponder()
         }
@@ -159,7 +160,7 @@ class NotesDetailViewController : UIViewController {
         
         if let attachment = attributes[.attachment] as? NSTextAttachment {
             if let image = attachment.image {
-                let imageName = image.accessibilityIdentifier ?? "circle" // Default to circle if nil
+                let imageName = image.accessibilityIdentifier ?? "circle"
                 let newImageName = (imageName == "circle") ? "checkmark.circle" : "circle"
                 
                 let newChecklistImage = NSTextAttachment()
@@ -279,15 +280,16 @@ class NotesDetailViewController : UIViewController {
 }
 
 extension NotesDetailViewController: UITextViewDelegate {
+    
     func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
         if textView == titleTextView && text == "\n" {
-            contentTextView.becomeFirstResponder() // Move focus to contentTextView on Return
-            return false // Prevent the newline character from being added to the titleTextView
+            contentTextView.becomeFirstResponder()
+            return false
         }
         
         if text == "\n" && isChecklistModeEnabled {
             insertChecklistItem(in: textView)
-            return false // Prevent default new line behavior
+            return false
         }
         
         if text.isEmpty, let textRange = Range(range, in: textView.text) {
@@ -297,8 +299,15 @@ extension NotesDetailViewController: UITextViewDelegate {
                 isChecklistModeEnabled = false
             }
         }
-        
         return true
+    }
+    
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        if isNewNote {
+            if textView == contentTextView && titleTextView.text.isEmpty {
+                titleTextView.becomeFirstResponder()
+            }
+        }
     }
 
 }

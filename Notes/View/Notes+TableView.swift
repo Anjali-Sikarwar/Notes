@@ -30,15 +30,12 @@ extension NotesViewController : UITableViewDataSource, UITableViewDelegate {
         
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         if let detailVC = storyboard.instantiateViewController(withIdentifier: "NotesDetailViewController") as? NotesDetailViewController {
-            
-            // Pass the selected note to the detail view
+
             detailVC.viewModel = NotesViewModel(note: selectedNote, context: managedContext)
             detailVC.managedContext = managedContext
-            detailVC.delegate = self  // To update the list after saving
+            detailVC.delegate = self 
             
             navigationController?.pushViewController(detailVC, animated: true)
         }
     }
-
-
 }
