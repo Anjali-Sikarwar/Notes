@@ -57,17 +57,17 @@
                                 </constraints>
                             </stackView>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="y2Q-0g-giM">
-                                <rect key="frame" x="16" y="149" width="361" height="619"/>
+                                <rect key="frame" x="16" y="167" width="361" height="601"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <color key="textColor" systemColor="labelColor"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="30"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
                             <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" scrollEnabled="NO" translatesAutoresizingMaskIntoConstraints="NO" id="iQz-j8-TFz">
-                                <rect key="frame" x="16" y="103" width="361" height="46"/>
+                                <rect key="frame" x="16" y="103" width="361" height="64"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                 <color key="textColor" systemColor="labelColor"/>
-                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="25"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="40"/>
                                 <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                             </textView>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="xKE-AY-JUi" userLabel="RichTextFormatingBaseView">
@@ -377,12 +377,27 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="6Ey-g2-ND3">
-                        <barButtonItem key="rightBarButtonItem" title="Item" image="ellipsis.circle" catalog="system" id="1od-ec-Qlc"/>
+                        <rightBarButtonItems>
+                            <barButtonItem title="Done" id="1od-ec-Qlc">
+                                <connections>
+                                    <action selector="doneButtonClicked:" destination="BYZ-38-t0r" id="JU1-lC-j1d"/>
+                                </connections>
+                            </barButtonItem>
+                            <barButtonItem title="Item" image="ellipsis.circle" catalog="system" id="PFl-e7-whQ"/>
+                            <barButtonItem title="Item" image="square.and.arrow.up" catalog="system" id="zJv-xF-x2x"/>
+                            <barButtonItem title="Item" image="arrow.uturn.forward.circle" catalog="system" id="1l3-C9-y6z"/>
+                            <barButtonItem title="Item" image="arrow.uturn.backward.circle" catalog="system" id="hNg-lD-E3A"/>
+                        </rightBarButtonItems>
                     </navigationItem>
                     <connections>
                         <outlet property="contentTextView" destination="y2Q-0g-giM" id="KSC-Rd-set"/>
+                        <outlet property="doneButton" destination="1od-ec-Qlc" id="m6Z-wX-NSX"/>
+                        <outlet property="menuButton" destination="PFl-e7-whQ" id="QFg-66-eFz"/>
+                        <outlet property="redoButton" destination="1l3-C9-y6z" id="ZOA-yR-0Xo"/>
                         <outlet property="richTextFormatingBaseView" destination="xKE-AY-JUi" id="m8X-WS-4ag"/>
+                        <outlet property="shareButton" destination="zJv-xF-x2x" id="Zeo-BK-g4J"/>
                         <outlet property="titleTextView" destination="iQz-j8-TFz" id="ezB-0b-Nag"/>
+                        <outlet property="undoButton" destination="hNg-lD-E3A" id="UwN-rK-tS5"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -507,6 +522,8 @@
         </scene>
     </scenes>
     <resources>
+        <image name="arrow.uturn.backward.circle" catalog="system" width="128" height="123"/>
+        <image name="arrow.uturn.forward.circle" catalog="system" width="128" height="123"/>
         <image name="bold" catalog="system" width="128" height="128"/>
         <image name="camera" catalog="system" width="128" height="93"/>
         <image name="cancel-48" width="48" height="48"/>
@@ -519,6 +536,7 @@
         <image name="list.dash" catalog="system" width="128" height="85"/>
         <image name="list.number" catalog="system" width="128" height="97"/>
         <image name="pencil.tip.crop.circle" catalog="system" width="128" height="123"/>
+        <image name="square.and.arrow.up" catalog="system" width="108" height="128"/>
         <image name="square.and.pencil" catalog="system" width="128" height="121"/>
         <image name="strikethrough" catalog="system" width="128" height="101"/>
         <image name="text.alignleft" catalog="system" width="128" height="99"/>
@@ -531,10 +549,10 @@
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
         <systemColor name="systemGray3Color">
-            <color red="0.78039215689999997" green="0.78039215689999997" blue="0.80000000000000004" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.7803921568627451" green="0.7803921568627451" blue="0.80000000000000004" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="systemGray6Color">
-            <color red="0.94901960780000005" green="0.94901960780000005" blue="0.96862745100000003" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

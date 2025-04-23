@@ -14,4 +14,5 @@ class Note: NSManagedObject {
     @NSManaged var content: String?
     @NSManaged var createdAt: Date!
     @NSManaged var updatedAt: Date!
+    @NSManaged var attributedContent: Data?
 }

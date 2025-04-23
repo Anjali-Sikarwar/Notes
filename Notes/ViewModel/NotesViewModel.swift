@@ -8,8 +8,6 @@
 import Foundation
 import CoreData
 
-import CoreData
-
 class NotesViewModel {
     
     private let managedContext: NSManagedObjectContext
@@ -25,7 +23,7 @@ class NotesViewModel {
         self.managedContext = context
     }
     
-    func saveNote(title: String, content: String) {
+    func saveNote(title: String, content: String, attributedContent: NSAttributedString) {
         guard !title.isEmpty || !content.isEmpty else { return }
 
         if note == nil {
@@ -38,6 +36,10 @@ class NotesViewModel {
         note?.title = title
         note?.content = content
         note?.updatedAt = Date()
+        note?.attributedContent = try? NSKeyedArchiver.archivedData(
+                withRootObject: attributedContent,
+                requiringSecureCoding: false
+            )
 
         do {
             try managedContext.save()

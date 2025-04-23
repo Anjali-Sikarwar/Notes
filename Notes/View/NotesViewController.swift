@@ -16,6 +16,7 @@ class NotesViewController: UIViewController {
 
     @IBOutlet weak var notesTableView: UITableView!
     var managedContext: NSManagedObjectContext!
+    var notesViewModel: NotesViewModel!
     var noteList: [Note] = []
     
     override func viewDidLoad() {
@@ -27,18 +28,14 @@ class NotesViewController: UIViewController {
             return
         }
         managedContext = appDelegate.persistentContainer.viewContext
+        notesViewModel = NotesViewModel(context: managedContext)
         
         loadNotes()
     }
     
     func loadNotes() {
-        let fetchRequest = NSFetchRequest<Note>(entityName: "Note")
-        do {
-            noteList = try managedContext.fetch(fetchRequest)
-            notesTableView.reloadData()
-        } catch let error as NSError {
-            print("Could not fetch. \(error), \(error.userInfo)")
-        }
+        noteList = notesViewModel.fetchNotes()
+        notesTableView.reloadData()
     }
 
     @IBAction func addNewNote(_ sender: Any) {

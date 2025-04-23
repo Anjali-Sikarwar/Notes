@@ -8,8 +8,6 @@
 import Foundation
 import UIKit
 
-var noteList = [Note]()
-
 extension NotesViewController : UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return noteList.count
@@ -18,10 +16,14 @@ extension NotesViewController : UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let noteCell = tableView.dequeueReusableCell(withIdentifier: "noteCellID", for: indexPath) as! NoteCell
         let note = noteList[indexPath.row]
-
         noteCell.titleLabel?.text = note.title
-        noteCell.descriptionLabel.text = note.content
-
+        
+        if let data = note.attributedContent,
+           let attributedText = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSAttributedString.self, from: data) {
+            noteCell.descriptionLabel.attributedText = attributedText
+        } else {
+            noteCell.descriptionLabel.text = note.content
+        }
         return noteCell
     }
     
