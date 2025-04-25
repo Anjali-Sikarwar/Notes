@@ -30,6 +30,7 @@ class NotesDetailViewController : UIViewController {
     
     var isChecklistModeEnabled = false
     var isNewNote = true
+    var defaultFont: UIFont?
 
     
     override func viewDidLoad() {
@@ -41,7 +42,7 @@ class NotesDetailViewController : UIViewController {
         titleTextView.isEditable = true
         contentTextView.isUserInteractionEnabled = true
         allRightButtons = [doneButton, menuButton, shareButton, redoButton, undoButton]
-        
+        defaultFont = contentTextView.font
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tapGesture.cancelsTouchesInView = false
         view.addGestureRecognizer(tapGesture)
@@ -183,9 +184,19 @@ class NotesDetailViewController : UIViewController {
 
         let attachmentString = NSAttributedString(attachment: checklistImage)
         let checklistText = NSMutableAttributedString()
-        checklistText.append(NSAttributedString(string: "\n"))
-        checklistText.append(NSAttributedString(string: "\n"))
-        
+
+        // Optional: Add newline if not at beginning or already on new line
+        if let selectedRange = textView.selectedTextRange {
+            let cursorPosition = textView.offset(from: textView.beginningOfDocument, to: selectedRange.start)
+            if cursorPosition > 0 {
+                let prevCharRange = NSRange(location: cursorPosition - 1, length: 1)
+                let prevChar = (textView.text as NSString).substring(with: prevCharRange)
+                if prevChar != "\n" {
+                    checklistText.append(NSAttributedString(string: "\n\n"))
+                }
+            }
+        }
+
         checklistText.append(attachmentString)
         checklistText.append(NSAttributedString(string: " ", attributes: [.font: font]))
 
@@ -193,16 +204,50 @@ class NotesDetailViewController : UIViewController {
             let location = textView.offset(from: textView.beginningOfDocument, to: selectedRange.start)
             textView.textStorage.insert(checklistText, at: location)
         }
-        
+
         let newPosition = textView.endOfDocument
         textView.selectedTextRange = textView.textRange(from: newPosition, to: newPosition)
         self.navigationItem.rightBarButtonItems = [self.doneButton, self.menuButton, self.shareButton, self.redoButton, self.undoButton]
-        
+
         DispatchQueue.main.async {
             textView.becomeFirstResponder()
             textView.typingAttributes[.font] = font
         }
     }
+
+    
+    
+//    func insertChecklistItem(in textView: UITextView) {
+//        guard let font = textView.font else { return }
+//        
+//        let checklistImage = NSTextAttachment()
+//        checklistImage.image = UIImage(named: "oval")
+//
+//        let imageHeight = font.lineHeight
+//        checklistImage.bounds = CGRect(x: 0, y: (font.capHeight - imageHeight) / 2, width: imageHeight, height: imageHeight)
+//
+//        let attachmentString = NSAttributedString(attachment: checklistImage)
+//        let checklistText = NSMutableAttributedString()
+//        checklistText.append(NSAttributedString(string: "\n"))
+////        checklistText.append(NSAttributedString(string: "\n"))
+//        
+//        checklistText.append(attachmentString)
+//        checklistText.append(NSAttributedString(string: " ", attributes: [.font: font]))
+//
+//        if let selectedRange = textView.selectedTextRange {
+//            let location = textView.offset(from: textView.beginningOfDocument, to: selectedRange.start)
+//            textView.textStorage.insert(checklistText, at: location)
+//        }
+//        
+//        let newPosition = textView.endOfDocument
+//        textView.selectedTextRange = textView.textRange(from: newPosition, to: newPosition)
+//        self.navigationItem.rightBarButtonItems = [self.doneButton, self.menuButton, self.shareButton, self.redoButton, self.undoButton]
+//        
+//        DispatchQueue.main.async {
+//            textView.becomeFirstResponder()
+//            textView.typingAttributes[.font] = font
+//        }
+//    }
     
     @objc func handleTapOnTextView(_ gesture: UITapGestureRecognizer) {
         print("ContentTextView tapped")
@@ -277,13 +322,15 @@ class NotesDetailViewController : UIViewController {
     func textViewDidChangeSelection(_ textView: UITextView) {
         if textView == contentTextView, let font = contentTextView.font {
             textView.typingAttributes[.font] = font
+        }else if textView.font == nil, let font = defaultFont {
+            contentTextView.font = font
         }
     }
 
     func setupTapGestureForChecklist() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapOnTextView(_:)))
         tapGesture.cancelsTouchesInView = false
-        tapGesture.delegate = self // 👈 Add this
+        tapGesture.delegate = self
         contentTextView.addGestureRecognizer(tapGesture)
     }
     
@@ -409,6 +456,9 @@ extension NotesDetailViewController: UITextViewDelegate {
             
             if updatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 isChecklistModeEnabled = false
+                if textView.font == nil, let font = defaultFont {
+                    contentTextView.font = font
+                }
             }
         }
         
@@ -447,7 +497,6 @@ extension NotesDetailViewController: UITextViewDelegate {
         if isNewNote {
             if textView == contentTextView && titleTextView.text.isEmpty {
                 titleTextView.becomeFirstResponder()
-                navigationItem.rightBarButtonItems = [doneButton, menuButton, shareButton, redoButton, undoButton]
             }
         }
         navigationItem.rightBarButtonItems = [doneButton, menuButton, shareButton, redoButton, undoButton]
